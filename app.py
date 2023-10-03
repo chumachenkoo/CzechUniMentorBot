@@ -6,8 +6,11 @@ app = FastAPI()
 
 @app.post('/webhook')
 async def webhook(request: Request):
-    body = await request.body()
-    print(body)
+    data = await request.body()
+    message = data.get("message")
+    chat_id = message["chat"]["id"]
+    text = message.get("text", "")
+    print(f"Message from {chat_id}: {text}")
     return {"status": "200"}
 
 
