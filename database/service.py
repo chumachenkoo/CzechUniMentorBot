@@ -59,6 +59,7 @@ async def add_teacher(teacher_name, telegram_id, subject_id):
         new_teacher = Teacher(name=teacher_name, telegram_id=telegram_id, subject_id=subject_id)
         session.add(new_teacher)
         session.commit()
+        return True
     except Exception as e:
         session.rollback()
         raise e
@@ -126,6 +127,20 @@ async def get_university_by_name(name):
         session.close()
 
 
+async def get_subject_by_name(name):
+    connection, session = await get_database_connection()
+
+    try:
+        subject = session.query(Subject).filter(Subject.name == name).first()
+        if subject:
+            return subject.id
+        else:
+            return None
+    finally:
+        await connection.close()
+        session.close()
+
+
 async def get_subjects_by_university(university_id):
     subjects_by_teacher = []
     connection, session = await get_database_connection()
@@ -160,7 +175,7 @@ async def get_teachers_by_subject(subject_id):
         session.close()
 
 
-async def delete_subject(subject_id):
+async def delete_subject_by_id(subject_id):
     connection, session = await get_database_connection()
 
     try:
@@ -197,7 +212,7 @@ async def delete_university_by_id(university_id):
         await connection.close()
 
 
-async def delete_teacher(teacher_id):
+async def delete_teacher_by_id(teacher_id):
     connection, session = await get_database_connection()
 
     try:
@@ -215,3 +230,19 @@ async def delete_teacher(teacher_id):
         session.close()
         await connection.close()
 
+
+async def get_teacher_by_name(teacher_name):
+    connection, session = await get_database_connection()
+
+    try:
+        teacher = session.query(Teacher).filter(Teacher.name == teacher_name).first()
+        if teacher:
+            return teacher.id
+        else:
+            raise ValueError(f"Teacher with ID {teacher_name} not found.")
+    except Exception as e:
+        session.rollback()
+        raise e
+    finally:
+        session.close()
+        await connection.close()
