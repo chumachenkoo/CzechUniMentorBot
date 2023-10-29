@@ -102,7 +102,7 @@ async def get_all_subjects():
 
     try:
         subjects = session.query(Subject).all()
-        if subjects:
+        if subjects is not None:
             for subject in subjects:
                 all_subjects.append((subject.name, subject.id, subject.university_id))
             return all_subjects
@@ -118,7 +118,7 @@ async def get_university_by_name(name):
 
     try:
         university = session.query(University).filter(University.name == name).first()
-        if university:
+        if university is not None:
             return university.id
         else:
             return None
@@ -132,7 +132,7 @@ async def get_subject_by_name(name):
 
     try:
         subject = session.query(Subject).filter(Subject.name == name).first()
-        if subject:
+        if subject is not None:
             return subject.id
         else:
             return None
@@ -147,7 +147,7 @@ async def get_subjects_by_university(university_id):
 
     try:
         subjects = session.query(Subject).filter(Subject.university_id == university_id).all()
-        if subjects:
+        if subjects is not None:
             for subject in subjects:
                 subjects_by_teacher.append((subject.name, subject.id, subject.university_id))
             return subjects_by_teacher
@@ -164,7 +164,7 @@ async def get_teachers_by_subject(subject_id):
 
     try:
         teachers = session.query(Teacher).filter(Teacher.subject_id == subject_id).all()
-        if teachers:
+        if teachers is not None:
             for teacher in teachers:
                 teachers_by_subject.append((teacher.name, teacher.id, teacher.telegram_id, teacher.subject_id))
             return teachers_by_subject
@@ -180,9 +180,10 @@ async def delete_subject_by_id(subject_id):
 
     try:
         subject = session.query(Subject).filter(Subject.id == subject_id).first()
-        if subject:
+        if subject is not None:
             session.delete(subject)
             session.commit()
+            return True
         else:
             raise ValueError(f"Subject with ID {subject_id} not found.")
     except Exception as e:
@@ -198,7 +199,7 @@ async def delete_university_by_id(university_id):
 
     try:
         university = session.query(University).filter(University.id == university_id).first()
-        if university:
+        if university is not None:
             session.delete(university)
             session.commit()
             return True
@@ -217,7 +218,7 @@ async def delete_teacher_by_id(teacher_id):
 
     try:
         teacher = session.query(Teacher).filter(Teacher.id == teacher_id).first()
-        if teacher:
+        if teacher is not None:
             session.delete(teacher)
             session.commit()
             return True
@@ -236,7 +237,7 @@ async def get_teacher_by_name(teacher_name):
 
     try:
         teacher = session.query(Teacher).filter(Teacher.name == teacher_name).first()
-        if teacher:
+        if teacher is not None:
             return teacher.id
         else:
             raise ValueError(f"Teacher with ID {teacher_name} not found.")
