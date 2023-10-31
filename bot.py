@@ -37,7 +37,7 @@ class States(StatesGroup):
 # Базовые кнопки
 @dp.message_handler(commands=['start'], state="*")
 async def on_start(message: types.Message, state: FSMContext):
-    if message.from_user.id == config.ADMIN_ID:
+    if message.from_user.id in config.ADMINS:
         async with state.proxy() as data:
             data["current_state"] = States.main_menu.state
         await States.main_menu.set()
@@ -87,7 +87,7 @@ async def get_back(message: types.Message, state: FSMContext):
 
 @dp.message_handler(lambda message: message.text == "Университеты", state="*")
 async def get_universities(message: types.Message, state: FSMContext):
-    if message.from_user.id == config.ADMIN_ID:
+    if message.from_user.id in config.ADMINS:
         async with state.proxy() as data:
             data["previous_state"] = States.main_menu.state
         await States.universities.set()
@@ -112,7 +112,7 @@ async def get_universities(message: types.Message, state: FSMContext):
 
 @dp.message_handler(lambda message: message.text == "Учителя", state="*")
 async def get_teachers(message: types.Message, state: FSMContext):
-    if message.from_user.id == config.ADMIN_ID:
+    if message.from_user.id in config.ADMINS:
         async with state.proxy() as data:
             data["previous_state"] = States.main_menu.state
 
@@ -136,7 +136,7 @@ async def get_teachers(message: types.Message, state: FSMContext):
 
 @dp.message_handler(lambda message: message.text == "Предметы", state="*")
 async def get_subjects(message: types.Message, state: FSMContext):
-    if message.from_user.id == config.ADMIN_ID:
+    if message.from_user.id in config.ADMINS:
         async with state.proxy() as data:
             data["previous_state"] = States.main_menu.state
 
@@ -147,8 +147,11 @@ async def get_subjects(message: types.Message, state: FSMContext):
         subjects = await db.get_all_subjects()
         if subjects:
             subjects_text = "Список предметов:\n"
+            seen_subjects = set()
             for subject in subjects:
-                subjects_text += "- {}\n".format(subject[0])
+                if subject[0] not in seen_subjects:
+                    subjects_text += "- {}\n".format(subject[0])
+                    seen_subjects.add(subject[0])
 
             await message.answer(subjects_text, reply_markup=keyboard)
         else:
@@ -162,7 +165,7 @@ async def get_subjects(message: types.Message, state: FSMContext):
 # Кнопки добавления
 @dp.message_handler(lambda message: message.text == "Добавить университет", state="*")
 async def add_university(message: types.Message, state: FSMContext):
-    if message.from_user.id == config.ADMIN_ID:
+    if message.from_user.id in config.ADMINS:
         async with state.proxy() as data:
             data["previous_state"] = States.universities.state
         await States.add_university.set()
@@ -176,7 +179,7 @@ async def add_university(message: types.Message, state: FSMContext):
 
 @dp.message_handler(lambda message: message.text == "Добавить предмет", state="*")
 async def add_university(message: types.Message, state: FSMContext):
-    if message.from_user.id == config.ADMIN_ID:
+    if message.from_user.id in config.ADMINS:
         async with state.proxy() as data:
             data["previous_state"] = States.universities.state
         await States.add_subject_to_university.set()
@@ -186,7 +189,7 @@ async def add_university(message: types.Message, state: FSMContext):
 
 @dp.message_handler(lambda message: message.text == "Добавить учителя", state="*")
 async def add_university(message: types.Message, state: FSMContext):
-    if message.from_user.id == config.ADMIN_ID:
+    if message.from_user.id in config.ADMINS:
         async with state.proxy() as data:
             data["previous_state"] = States.universities.state
         await States.add_teacher_to_subject.set()
@@ -252,7 +255,7 @@ async def save_university(message: types.Message, state: FSMContext):
     async with state.proxy() as data:
         data["previous_state"] = States.universities.state
 
-    if message.from_user.id == config.ADMIN_ID:
+    if message.from_user.id in config.ADMINS:
         if await db.get_university_by_name(university_name):
             await message.answer("Такой университет уже существует!")
             await add_university(message, state=state)
@@ -275,7 +278,7 @@ async def save_subject(message: types.Message, state: FSMContext):
         data["previous_state"] = States.universities.state
     university_id = await db.get_university_by_name(university_selected)
 
-    if message.from_user.id == config.ADMIN_ID:
+    if message.from_user.id in config.ADMINS:
         add_status = await db.add_subject(subject_name, university_id)
         if add_status:
             await message.answer(f"Предмет {subject_name} успешно добавлен.")
@@ -294,7 +297,7 @@ async def save_teacher(message: types.Message, state: FSMContext):
     subject_id = await db.get_subject_by_name(subject_selected)
     print(teacher_name, teacher_id, subject_id)
 
-    if message.from_user.id == config.ADMIN_ID:
+    if message.from_user.id in config.ADMINS:
         add_status = await db.add_teacher(teacher_name, teacher_id, subject_id)
         if add_status:
             await message.answer(f"Учитель {teacher_name} успешно добавлен.")
@@ -373,16 +376,16 @@ async def selected_teacher(message: types.Message, state: FSMContext):
             data["previous_state"] = States.universities.state
         await States.teacher_selected.set()
 
+        teacher_text = "Вы выбрали учителя {}.\n".format(teacher_name)
         keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
         button1 = types.KeyboardButton("Удалить учителя")
         button2 = types.KeyboardButton("Назад")
         keyboard.add(button1, button2)
 
-        await message.answer(reply_markup=keyboard)
+        await message.answer(teacher_text, reply_markup=keyboard)
         await States.teacher_selected.set()
     else:
-        await message.answer("Выберите учителя из списка.")
-
+        await message.answer("Ошибка, такого учителя не существует.")
 
 
 if __name__ == '__main__':
