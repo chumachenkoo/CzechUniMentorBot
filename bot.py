@@ -24,18 +24,18 @@ class States(StatesGroup):
     delete_university = State()
     delete_teacher = State()
     delete_subject = State()
-    university_selected = State()
-    teacher_selected = State()
-    subject_selected = State()
+    selected_university = State()
+    selected_teacher = State()
+    selected_subject = State()
     change_university_name = State()
     add_subject_to_university = State()
     delete_subject_from_university = State()
     add_teacher_to_subject = State()
 
     user_universities = State()
-    user_university_selected = State()
-    user_subject_selected = State()
-    user_teacher_selected = State()
+    selected_user_university = State()
+    selected_user_subject = State()
+    selected_user_teacher = State()
 
 
 # ______________________________________________________________________________________________________________________
@@ -48,7 +48,7 @@ async def on_start(message: types.Message, state: FSMContext):
 
     if message.from_user.id in config.ADMINS:
         if message.text == "/start":
-            text = f"Привет, администратор {message.from_user.full_name}! Я бот MentorBot :)"
+            text = f"Привет, администратор {message.from_user.first_name}! Я бот MentorBot :)"
         else:
             text = "Вы вернулись назад :)"
         keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
@@ -59,7 +59,7 @@ async def on_start(message: types.Message, state: FSMContext):
         await message.answer(text, reply_markup=keyboard)
     else:
         if message.text == "/start":
-            text = (f"Привет, {message.from_user.full_name}! Я бот MentorBot :)\n"
+            text = (f"Привет, {message.from_user.first_name}! Я бот MentorBot :)\n"
                     f"Я помогу тебе найти учителя по предмету, который ты изучаешь в университете.\n"
                     f"Нажми на 'Выбрать университет', чтобы начать.")
         else:
@@ -191,7 +191,7 @@ async def add_university(message: types.Message, state: FSMContext):
         pass
 
 
-@dp.message_handler(lambda message: message.text == "Добавить предмет", state="*")
+@dp.message_handler(lambda message: message.text == "Добавить предмет", state=States.selected_university)
 async def add_university(message: types.Message, state: FSMContext):
     if message.from_user.id in config.ADMINS:
         async with state.proxy() as data:
@@ -207,7 +207,7 @@ async def add_university(message: types.Message, state: FSMContext):
         pass
 
 
-@dp.message_handler(lambda message: message.text == "Добавить учителя", state="*")
+@dp.message_handler(lambda message: message.text == "Добавить учителя", state=States.selected_subject)
 async def add_university(message: types.Message, state: FSMContext):
     if message.from_user.id in config.ADMINS:
         async with state.proxy() as data:
@@ -223,50 +223,50 @@ async def add_university(message: types.Message, state: FSMContext):
 
 # ______________________________________________________________________________________________________________________
 # Кнопки удаления
-@dp.message_handler(lambda message: message.text == "Удалить университет", state=States.university_selected)
+@dp.message_handler(lambda message: message.text == "Удалить университет", state=States.selected_university)
 async def delete_university(message: types.Message, state: FSMContext):
     async with state.proxy() as data:
-        university_selected = data.get("university_selected")
+        selected_university = data.get("university_selected")
 
-    university_id = await db.get_university_by_name(university_selected)
+    university_id = await db.get_university_by_name(selected_university)
     delete_status = await db.delete_university_by_id(university_id)
 
     if delete_status:
-        await message.answer(f"Университет {university_selected} успешно удален.")
+        await message.answer(f"Университет {selected_university} успешно удален.")
     else:
-        await message.answer(f"Произошла ошибка при удалении университета {university_selected}.")
+        await message.answer(f"Произошла ошибка при удалении университета {selected_university}.")
 
     await get_universities(message, state=state)
 
 
-@dp.message_handler(lambda message: message.text == "Удалить предмет", state=States.subject_selected)
+@dp.message_handler(lambda message: message.text == "Удалить предмет", state=States.selected_subject)
 async def delete_subject(message: types.Message, state: FSMContext):
     async with state.proxy() as data:
-        subject_selected = data.get("subject_selected")
+        selected_subject = data.get("subject_selected")
 
-    subject_id = await db.get_subject_by_name(subject_selected)
+    subject_id = await db.get_subject_by_name(selected_subject)
     delete_status = await db.delete_subject_by_id(subject_id)
 
     if delete_status:
-        await message.answer(f"Предмет {subject_selected} успешно удален.")
+        await message.answer(f"Предмет {selected_subject} успешно удален.")
     else:
-        await message.answer(f"Произошла ошибка при удалении предмета {subject_selected}.")
+        await message.answer(f"Произошла ошибка при удалении предмета {selected_subject}.")
 
     await get_universities(message, state=state)
 
 
-@dp.message_handler(lambda message: message.text == "Удалить учителя", state=States.teacher_selected)
+@dp.message_handler(lambda message: message.text == "Удалить учителя", state=States.selected_teacher)
 async def delete_teacher(message: types.Message, state: FSMContext):
     async with state.proxy() as data:
-        teacher_selected = data.get("teacher_selected")
+        selected_teacher = data.get("selected_teacher")
 
-    teacher_id = await db.get_teacher_by_name(teacher_selected)
+    teacher_id = await db.get_teacher_by_name(selected_teacher)
     delete_status = await db.delete_teacher_by_id(teacher_id)
 
     if delete_status:
-        await message.answer(f"Учитель {teacher_selected} успешно удален.")
+        await message.answer(f"Учитель {selected_teacher} успешно удален.")
     else:
-        await message.answer(f"Произошла ошибка при удалении учителя {teacher_selected}.")
+        await message.answer(f"Произошла ошибка при удалении учителя {selected_teacher}.")
 
     await get_universities(message, state=state)
 
@@ -298,9 +298,9 @@ async def save_subject(message: types.Message, state: FSMContext):
     subject_name = message.text
 
     async with state.proxy() as data:
-        university_selected = data.get("university_selected")
+        selected_university = data.get("selected_university")
         data["previous_state"] = States.universities.state
-    university_id = await db.get_university_by_name(university_selected)
+    university_id = await db.get_university_by_name(selected_university)
 
     if message.from_user.id in config.ADMINS:
         add_status = await db.add_subject(subject_name, university_id)
@@ -315,10 +315,10 @@ async def save_teacher(message: types.Message, state: FSMContext):
     teacher_name, teacher_id = message.text.split(", ")
 
     async with state.proxy() as data:
-        subject_selected = data.get("subject_selected")
+        selected_subject = data.get("selected_subject")
         data["previous_state"] = States.universities.state
 
-    subject_id = await db.get_subject_by_name(subject_selected)
+    subject_id = await db.get_subject_by_name(selected_subject)
     print(teacher_name, teacher_id, subject_id)
 
     if message.from_user.id in config.ADMINS:
@@ -342,7 +342,8 @@ async def selected_university(message: types.Message, state: FSMContext):
             data["selected_university"] = university_name
             data["selected_university_id"] = university_id
             data["previous_state"] = States.universities.state
-        await States.university_selected.set()
+        await States.selected_university.set()
+        print()
 
         keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
         button1 = types.KeyboardButton("Добавить предмет")
@@ -356,21 +357,21 @@ async def selected_university(message: types.Message, state: FSMContext):
             keyboard.add(types.KeyboardButton(subject[0]))
 
         await message.answer(subjects_text, reply_markup=keyboard)
-        await States.university_selected.set()
+        await States.selected_university.set()
     else:
         await message.answer("Выберите существующий университет из списка.")
 
 
-@dp.message_handler(state=States.university_selected)
+@dp.message_handler(state=States.selected_university)
 async def selected_subject(message: types.Message, state: FSMContext):
     subject_name = message.text
     subject_id = await db.get_subject_by_name(subject_name)
 
     if subject_id:
         async with state.proxy() as data:
-            data["subject_selected"] = subject_name
+            data["selected_subject"] = subject_name
             data["previous_state"] = States.universities.state
-        await States.subject_selected.set()
+        await States.selected_subject.set()
 
         keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
         button1 = types.KeyboardButton("Добавить учителя")
@@ -384,21 +385,21 @@ async def selected_subject(message: types.Message, state: FSMContext):
             keyboard.add(types.KeyboardButton(teacher[0]))
 
         await message.answer(teacher_text, reply_markup=keyboard)
-        await States.subject_selected.set()
+        await States.selected_subject.set()
     else:
         await message.answer("Выберите учителя из списка.")
 
 
-@dp.message_handler(state=States.subject_selected)
+@dp.message_handler(state=States.selected_subject)
 async def selected_teacher(message: types.Message, state: FSMContext):
     teacher_name = message.text
     teacher_id = await db.get_teacher_by_name(teacher_name)
 
     if teacher_id:
         async with state.proxy() as data:
-            data["teacher_selected"] = teacher_name
+            data["selected_teacher"] = teacher_name
             data["previous_state"] = States.universities.state
-        await States.teacher_selected.set()
+        await States.selected_teacher.set()
 
         teacher_text = "Вы выбрали учителя {}.\n".format(teacher_name)
         keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
@@ -407,7 +408,6 @@ async def selected_teacher(message: types.Message, state: FSMContext):
         keyboard.add(button1, button2)
 
         await message.answer(teacher_text, reply_markup=keyboard)
-        await States.teacher_selected.set()
     else:
         await message.answer("Ошибка, такого учителя не существует.")
 
@@ -435,7 +435,7 @@ async def user_get_universities(message: types.Message, state: FSMContext):
 
 
 @dp.message_handler(state=States.user_universities)
-async def user_selected_university(message: types.Message, state: FSMContext):
+async def selected_user_university(message: types.Message, state: FSMContext):
     university_name = message.text
     university_id = await db.get_university_by_name(university_name)
 
@@ -444,7 +444,7 @@ async def user_selected_university(message: types.Message, state: FSMContext):
             data["selected_university"] = university_name
             data["selected_university_id"] = university_id
             data["previous_state"] = States.user_universities.state
-        await States.user_university_selected.set()
+        await States.selected_user_university.set()
 
         keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
         button1 = types.KeyboardButton("Назад")
@@ -460,16 +460,16 @@ async def user_selected_university(message: types.Message, state: FSMContext):
         await message.answer("Выберите существующий университет из списка.")
 
 
-@dp.message_handler(state=States.user_university_selected)
-async def user_selected_subject(message: types.Message, state: FSMContext):
+@dp.message_handler(state=States.selected_user_university)
+async def selected_user_subject(message: types.Message, state: FSMContext):
     subject_name = message.text
     subject_id = await db.get_subject_by_name(subject_name)
 
     if subject_id:
         async with state.proxy() as data:
-            data["subject_selected"] = subject_name
+            data["selected_subject"] = subject_name
             data["previous_state"] = States.user_universities.state
-        await States.user_subject_selected.set()
+        await States.selected_user_subject.set()
 
         keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
         button1 = types.KeyboardButton("Назад")
@@ -485,16 +485,16 @@ async def user_selected_subject(message: types.Message, state: FSMContext):
         await message.answer("Выберите учителя из списка.")
 
 
-@dp.message_handler(state=States.user_subject_selected)
-async def user_selected_teacher(message: types.Message, state: FSMContext):
+@dp.message_handler(state=States.selected_user_subject)
+async def selected_user_teacher(message: types.Message, state: FSMContext):
     teacher_name = message.text
-    teacher_id = await db.get_teacher_by_name(teacher_name)
+    teacher_id = await db.get_teacher_by_name(teacher_name) 
 
     if teacher_id:
         async with state.proxy() as data:
-            data["teacher_selected"] = teacher_name
+            data["selected_teacher"] = teacher_name
             data["previous_state"] = States.user_universities.state
-        await States.user_teacher_selected.set()
+        await States.selected_user_teacher.set()
 
         teacher_text = "Вы выбрали учителя {}.\n".format(teacher_name)
         keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
