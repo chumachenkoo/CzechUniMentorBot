@@ -6,10 +6,6 @@ import database.service as db
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters.state import State, StatesGroup
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
-# import logging
-#
-# logging.basicConfig()
-# logging.getLogger('sqlalchemy.engine').setLevel(logging.INFO)
 
 bot = Bot(token=config.BOT_TOKEN)
 storage = MemoryStorage()
@@ -60,6 +56,14 @@ async def on_start(message: types.Message, state: FSMContext):
         pass
 
 
+@dp.message_handler(lambda message: message.text == "Главная", state="*")
+async def get_back(message: types.Message, state: FSMContext):
+    async with state.proxy() as data:
+        data["previous_state"] = States.main_menu.state
+    await States.main_menu.set()
+    await on_start(message, state=state)
+
+
 @dp.message_handler(lambda message: message.text == "Назад", state="*")
 async def get_back(message: types.Message, state: FSMContext):
     async with state.proxy() as data:
@@ -90,7 +94,7 @@ async def get_universities(message: types.Message, state: FSMContext):
 
         keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
         button1 = types.KeyboardButton("Добавить университет")
-        button3 = types.KeyboardButton("Назад")
+        button3 = types.KeyboardButton("Главная")
         keyboard.add(button1, button3)
 
         universities = await db.get_all_universities()
@@ -184,7 +188,7 @@ async def add_university(message: types.Message, state: FSMContext):
 async def add_university(message: types.Message, state: FSMContext):
     if message.from_user.id == config.ADMIN_ID:
         async with state.proxy() as data:
-            data["previous_state"] = States.subjects.state
+            data["previous_state"] = States.universities.state
         await States.add_teacher_to_subject.set()
 
         await message.answer("Введите имя учителя и  его ID в Telegram: (Имя, ID)")
@@ -280,12 +284,13 @@ async def save_subject(message: types.Message, state: FSMContext):
 
 
 @dp.message_handler(state=States.add_teacher_to_subject)
-async def save_subject(message: types.Message, state: FSMContext):
+async def save_teacher(message: types.Message, state: FSMContext):
     teacher_name, teacher_id = message.text.split(", ")
 
     async with state.proxy() as data:
         subject_selected = data.get("subject_selected")
-        data["previous_state"] = States.subject_selected.state
+        data["previous_state"] = States.universities.state
+
     subject_id = await db.get_subject_by_name(subject_selected)
     print(teacher_name, teacher_id, subject_id)
 
@@ -337,9 +342,7 @@ async def selected_subject(message: types.Message, state: FSMContext):
     if subject_id:
         async with state.proxy() as data:
             data["subject_selected"] = subject_name
-            # data["selected_subject_id"] = subject_id
             data["previous_state"] = States.universities.state
-            # data["current_state"] = States.universities.state
         await States.subject_selected.set()
 
         keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
@@ -367,7 +370,7 @@ async def selected_teacher(message: types.Message, state: FSMContext):
     if teacher_id:
         async with state.proxy() as data:
             data["teacher_selected"] = teacher_name
-            data["previous_state"] = States.subjects.state
+            data["previous_state"] = States.universities.state
         await States.teacher_selected.set()
 
         keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
