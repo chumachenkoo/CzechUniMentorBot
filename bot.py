@@ -116,6 +116,9 @@ async def get_universities(message: types.Message, state: FSMContext):
             await message.answer(universities_text, reply_markup=keyboard)
         else:
             await message.answer("Список университетов пуст.", reply_markup=keyboard)
+    else:
+        await message.answer("Вы не являетесь администратором.")
+        await on_start(message)
 
 
 @dp.message_handler(lambda message: message.text == "Учителя", state="*")
@@ -500,22 +503,37 @@ async def selected_user_subject(message: types.Message, state: FSMContext):
 @dp.message_handler(state=States.selected_user_subject)
 async def selected_user_teacher(message: types.Message, state: FSMContext):
     teacher_name = message.text
-    teacher_id = await db.get_teacher_by_name(teacher_name) 
+    teacher_username, teacher_telegram_id = await db.get_teacher_by_name(teacher_name)
 
-    if teacher_id:
+    if teacher_username:
         async with state.proxy() as data:
             data["selected_teacher"] = teacher_name
+            data["selected_teacher_username"] = teacher_username
             data["previous_state"] = States.user_universities.state
         await States.selected_user_teacher.set()
 
         teacher_text = "Вы выбрали учителя {}.\n".format(teacher_name)
-        keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-        button1 = types.KeyboardButton("Назад")
-        keyboard.add(button1)
+        url = f"https://t.me/{teacher_username}"
 
-        await message.answer(teacher_text, reply_markup=keyboard)
+        photos = await bot.get_user_profile_photos(teacher_telegram_id)
+        if photos.total_count > 0:
+            await bot.send_photo(message.chat.id, photos.photos[0][0].file_id)
+        else:
+            await message.answer("У этого пользователя нет фото профиля.")
+
+        keyboard1 = types.InlineKeyboardMarkup(resize_keyboard=True)
+        button1 = types.InlineKeyboardButton("Написать учителю", url=url)
+        keyboard1.add(button1)
+
+        keyboard2 = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        button2 = types.KeyboardButton("Назад")
+        keyboard2.add(button2)
+
+        await message.answer(teacher_text, reply_markup=keyboard1)
+        await message.answer(reply_markup=keyboard2)
     else:
         await message.answer("Ошибка, такого учителя не существует.")
+
 
 if __name__ == '__main__':
     executor.start_polling(dp, skip_updates=False)

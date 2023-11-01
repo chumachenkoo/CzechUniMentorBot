@@ -36,6 +36,7 @@ class Teacher(Base):
     id = Column(Integer, primary_key=True)
     name = Column(String, nullable=False)
     telegram_username = Column(String, unique=True, nullable=False)
+    telegram_id = Column(Integer, unique=True, nullable=True)
     subject_id = Column(Integer, ForeignKey('subjects.id'))
     subject = relationship('Subject', backref='teachers')
 

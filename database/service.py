@@ -180,7 +180,7 @@ async def get_teachers_by_subject(subject_id):
         teachers = session.query(Teacher).filter(Teacher.subject_id == subject_id).all()
         if teachers is not None:
             for teacher in teachers:
-                teachers_by_subject.append((teacher.name, teacher.id, teacher.telegram_id, teacher.subject_id))
+                teachers_by_subject.append((teacher.name, teacher.id, teacher.telegram_username, teacher.subject_id))
             return teachers_by_subject
         else:
             return []
@@ -252,7 +252,7 @@ async def get_teacher_by_name(teacher_name):
     try:
         teacher = session.query(Teacher).filter(Teacher.name == teacher_name).first()
         if teacher is not None:
-            return teacher.id, teacher.telegram_username
+            return teacher.telegram_username, teacher.telegram_id
         else:
             raise ValueError(f"Teacher with ID {teacher_name} not found.")
     except Exception as e:
