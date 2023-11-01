@@ -53,10 +53,11 @@ async def add_subject(subject_name, university_id):
         await connection.close()
 
 
-async def add_teacher(teacher_name, teacher_telegram_username, subject_id):
+async def add_teacher(teacher_name, teacher_telegram_username, teacher_telegram_id, subject_id):
     connection, session = await get_database_connection()
     try:
-        new_teacher = Teacher(name=teacher_name, telegram_username=teacher_telegram_username, subject_id=subject_id)
+        new_teacher = Teacher(name=teacher_name, telegram_username=teacher_telegram_username,
+                              telegram_id=teacher_telegram_id, subject_id=subject_id)
         session.add(new_teacher)
         session.commit()
         return True

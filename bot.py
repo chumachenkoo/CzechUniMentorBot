@@ -219,7 +219,7 @@ async def add_university(message: types.Message, state: FSMContext):
         button1 = types.KeyboardButton("Назад")
         keyboard.add(button1)
 
-        await message.answer("Введите имя учителя и его Username в Telegram: (Имя, Username)", reply_markup=keyboard)
+        await message.answer("Введите имя учителя, его Username и ID в Telegram: (Имя, Username, ID)", reply_markup=keyboard)
     else:
         await message.answer("Вы не являетесь администратором.")
         await on_start(message)
@@ -328,7 +328,7 @@ async def save_subject(message: types.Message, state: FSMContext):
 
 @dp.message_handler(state=States.add_teacher_to_subject)
 async def save_teacher(message: types.Message, state: FSMContext):
-    teacher_name, teacher_telegram_username = message.text.split(", ")
+    teacher_name, teacher_telegram_username, teacher_telegram_id = message.text.split(", ")
 
     async with state.proxy() as data:
         selected_subject = data.get("selected_subject")
@@ -338,7 +338,7 @@ async def save_teacher(message: types.Message, state: FSMContext):
     print(teacher_name, teacher_telegram_username, subject_id)
 
     if message.from_user.id in config.ADMINS:
-        add_status = await db.add_teacher(teacher_name, teacher_telegram_username, subject_id)
+        add_status = await db.add_teacher(teacher_name, teacher_telegram_username, teacher_telegram_id, subject_id)
         if add_status:
             await message.answer(f"Учитель {teacher_name} успешно добавлен.")
         else:
