@@ -9,11 +9,11 @@ async def get_database_connection():
     return connection, session
 
 
-async def create_user(telegram_id):
+async def create_user(telegram_username):
     connection, session = await get_database_connection()
 
     try:
-        new_user = User(telegram_id=telegram_id)
+        new_user = User(telegram_username=telegram_username)
         session.add(new_user)
         session.commit()
     except Exception as e:
@@ -53,10 +53,10 @@ async def add_subject(subject_name, university_id):
         await connection.close()
 
 
-async def add_teacher(teacher_name, telegram_id, subject_id):
+async def add_teacher(teacher_name, teacher_telegram_username, subject_id):
     connection, session = await get_database_connection()
     try:
-        new_teacher = Teacher(name=teacher_name, telegram_id=telegram_id, subject_id=subject_id)
+        new_teacher = Teacher(name=teacher_name, telegram_username=teacher_telegram_username, subject_id=subject_id)
         session.add(new_teacher)
         session.commit()
         return True
@@ -66,6 +66,20 @@ async def add_teacher(teacher_name, telegram_id, subject_id):
     finally:
         session.close()
         await connection.close()
+
+
+async def get_user_by_username(telegram_username):
+    connection, session = await get_database_connection()
+
+    try:
+        user = session.query(User).filter(User.telegram_username == telegram_username).first()
+        if user is not None:
+            return user.id
+        else:
+            return None
+    finally:
+        await connection.close()
+        session.close()
 
 
 async def get_all_universities():
@@ -238,7 +252,7 @@ async def get_teacher_by_name(teacher_name):
     try:
         teacher = session.query(Teacher).filter(Teacher.name == teacher_name).first()
         if teacher is not None:
-            return teacher.id
+            return teacher.id, teacher.telegram_username
         else:
             raise ValueError(f"Teacher with ID {teacher_name} not found.")
     except Exception as e:

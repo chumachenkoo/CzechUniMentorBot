@@ -12,7 +12,7 @@ class User(Base):
     __tablename__ = 'users'
 
     id = Column(Integer, primary_key=True)
-    telegram_id = Column(Integer, unique=True, nullable=False)
+    telegram_username = Column(String, unique=True, nullable=False)
 
 
 class University(Base):
@@ -35,7 +35,7 @@ class Teacher(Base):
     __tablename__ = 'teachers'
     id = Column(Integer, primary_key=True)
     name = Column(String, nullable=False)
-    telegram_id = Column(Integer, unique=True, nullable=False)
+    telegram_username = Column(String, unique=True, nullable=False)
     subject_id = Column(Integer, ForeignKey('subjects.id'))
     subject = relationship('Subject', backref='teachers')
 
