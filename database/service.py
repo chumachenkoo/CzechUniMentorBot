@@ -1,4 +1,4 @@
-from database.models import User, University, Teacher, Subject, Session
+from database.models import User, University, Teacher, Subject, Session, ProfilePhoto, ReviewPhoto
 import asyncpg
 from config import DB_URL
 
@@ -53,11 +53,10 @@ async def add_subject(subject_name, university_id):
         await connection.close()
 
 
-async def add_teacher(teacher_name, teacher_telegram_username, teacher_telegram_id, subject_id):
+async def add_teacher(teacher_name, teacher_telegram_username, subject_id):
     connection, session = await get_database_connection()
     try:
-        new_teacher = Teacher(name=teacher_name, telegram_username=teacher_telegram_username,
-                              telegram_id=teacher_telegram_id, subject_id=subject_id)
+        new_teacher = Teacher(name=teacher_name, telegram_username=teacher_telegram_username, subject_id=subject_id)
         session.add(new_teacher)
         session.commit()
         return True
@@ -253,9 +252,96 @@ async def get_teacher_by_name(teacher_name):
     try:
         teacher = session.query(Teacher).filter(Teacher.name == teacher_name).first()
         if teacher is not None:
-            return teacher.telegram_username, teacher.telegram_id
+            return teacher.telegram_username
         else:
             raise ValueError(f"Teacher with ID {teacher_name} not found.")
+    except Exception as e:
+        session.rollback()
+        raise e
+    finally:
+        session.close()
+        await connection.close()
+
+
+async def add_profile_photo(teacher_id, image_data):
+    connection, session = await get_database_connection()
+    try:
+        new_photo = ProfilePhoto(image_data=image_data, teacher_id=teacher_id)
+        session.add(new_photo)
+        session.commit()
+        return True
+    except Exception as e:
+        session.rollback()
+        raise e
+    finally:
+        session.close()
+        await connection.close()
+
+
+async def add_review_photo(teacher_id, image_data):
+    connection, session = await get_database_connection()
+    try:
+        new_photo = ReviewPhoto(image_data=image_data, teacher_id=teacher_id)
+        session.add(new_photo)
+        session.commit()
+        return True
+    except Exception as e:
+        session.rollback()
+        raise e
+    finally:
+        session.close()
+        await connection.close()
+
+
+async def get_profile_photo(teacher_id):
+    connection, session = await get_database_connection()
+    try:
+        photo = session.query(ProfilePhoto).filter(ProfilePhoto.teacher_id == teacher_id).first()
+        if photo:
+            return photo.image_data
+        else:
+            return None
+    finally:
+        session.close()
+        await connection.close()
+
+
+async def get_review_photos(teacher_id):
+    connection, session = await get_database_connection()
+    try:
+        photos = session.query(ReviewPhoto).filter(ReviewPhoto.teacher_id == teacher_id).all()
+        return [photo.image_data for photo in photos]
+    finally:
+        session.close()
+        await connection.close()
+
+
+async def delete_profile_photo(teacher_id):
+    connection, session = await get_database_connection()
+    try:
+        photo = session.query(ProfilePhoto).filter(ProfilePhoto.teacher_id == teacher_id).first()
+        if photo:
+            session.delete(photo)
+            session.commit()
+            return True
+        else:
+            raise ValueError(f"Profile photo for teacher ID {teacher_id} not found.")
+    except Exception as e:
+        session.rollback()
+        raise e
+    finally:
+        session.close()
+        await connection.close()
+
+
+async def delete_review_photos(teacher_id):
+    connection, session = await get_database_connection()
+    try:
+        photos = session.query(ReviewPhoto).filter(ReviewPhoto.teacher_id == teacher_id).all()
+        for photo in photos:
+            session.delete(photo)
+        session.commit()
+        return True
     except Exception as e:
         session.rollback()
         raise e

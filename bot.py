@@ -192,7 +192,7 @@ async def add_university(message: types.Message, state: FSMContext):
 
 
 @dp.message_handler(lambda message: message.text == "Добавить предмет", state=States.selected_university)
-async def add_university(message: types.Message, state: FSMContext):
+async def add_subject(message: types.Message, state: FSMContext):
     if message.from_user.id in config.ADMINS:
         async with state.proxy() as data:
             data["previous_state"] = States.universities.state
@@ -209,7 +209,7 @@ async def add_university(message: types.Message, state: FSMContext):
 
 
 @dp.message_handler(lambda message: message.text == "Добавить учителя", state=States.selected_subject)
-async def add_university(message: types.Message, state: FSMContext):
+async def add_teacher(message: types.Message, state: FSMContext):
     if message.from_user.id in config.ADMINS:
         async with state.proxy() as data:
             data["previous_state"] = States.universities.state
@@ -224,6 +224,8 @@ async def add_university(message: types.Message, state: FSMContext):
         await message.answer("Вы не являетесь администратором.")
         await on_start(message)
 
+#Добавить функционал добавления фото профиля
+#Добавить функционал добавления фото отзывов
 
 # ______________________________________________________________________________________________________________________
 # Кнопки удаления
@@ -285,6 +287,9 @@ async def delete_teacher(message: types.Message, state: FSMContext):
     else:
         await message.answer("Вы не являетесь администратором.")
         await on_start(message)
+
+#Добавить функционал удаления фото профиля
+#Добавить функционал удаления фото отзывов
 
 
 # ______________________________________________________________________________________________________________________
@@ -500,10 +505,11 @@ async def selected_user_subject(message: types.Message, state: FSMContext):
         await message.answer("Выберите учителя из списка.")
 
 
+# Добавить кнопки Отзывы, Добавить фото из БД
 @dp.message_handler(state=States.selected_user_subject)
 async def selected_user_teacher(message: types.Message, state: FSMContext):
     teacher_name = message.text
-    teacher_username, teacher_telegram_id = await db.get_teacher_by_name(teacher_name)
+    teacher_username = await db.get_teacher_by_name(teacher_name)
 
     if teacher_username:
         async with state.proxy() as data:
@@ -514,12 +520,6 @@ async def selected_user_teacher(message: types.Message, state: FSMContext):
 
         teacher_text = "Вы выбрали учителя {}.\n".format(teacher_name)
         url = f"https://t.me/{teacher_username}"
-
-        photos = await bot.get_user_profile_photos(teacher_telegram_id)
-        if photos.total_count > 0:
-            await bot.send_photo(message.chat.id, photos.photos[0][0].file_id)
-        else:
-            await message.answer("У этого пользователя нет фото профиля.")
 
         keyboard1 = types.InlineKeyboardMarkup(resize_keyboard=True)
         button1 = types.InlineKeyboardButton("Написать учителю", url=url)
@@ -534,6 +534,8 @@ async def selected_user_teacher(message: types.Message, state: FSMContext):
     else:
         await message.answer("Ошибка, такого учителя не существует.")
 
+
+#Добавить кнопку Отзывы
 
 if __name__ == '__main__':
     executor.start_polling(dp, skip_updates=False)

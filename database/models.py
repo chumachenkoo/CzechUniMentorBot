@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, create_engine
+from sqlalchemy import Column, Integer, String, ForeignKey, create_engine, LargeBinary
 from sqlalchemy.orm import relationship
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm import declarative_base
@@ -36,9 +36,25 @@ class Teacher(Base):
     id = Column(Integer, primary_key=True)
     name = Column(String, nullable=False)
     telegram_username = Column(String, unique=True, nullable=False)
-    telegram_id = Column(Integer, unique=True, nullable=True)
     subject_id = Column(Integer, ForeignKey('subjects.id'))
     subject = relationship('Subject', backref='teachers')
+
+    profile_photo = relationship('ProfilePhoto', uselist=False, backref='teacher')
+    review_photos = relationship('ReviewPhoto', backref='teacher')
+
+
+class ProfilePhoto(Base):
+    __tablename__ = 'profile_photos'
+    id = Column(Integer, primary_key=True)
+    image_data = Column(LargeBinary, nullable=False)
+    teacher_id = Column(Integer, ForeignKey('teachers.id'))
+
+
+class ReviewPhoto(Base):
+    __tablename__ = 'review_photos'
+    id = Column(Integer, primary_key=True)
+    image_data = Column(LargeBinary, nullable=False)
+    teacher_id = Column(Integer, ForeignKey('teachers.id'))
 
 
 engine = create_engine(DB_URL)
