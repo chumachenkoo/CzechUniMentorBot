@@ -161,7 +161,8 @@ async def get_subjects(message: types.Message, state: FSMContext):
         await on_start(message)
 
 
-@dp.message_handler(lambda message: message.text == "Отзывы", state=[States.selected_user_teacher, States.selected_teacher])
+@dp.message_handler(lambda message: message.text == "Отзывы",
+                    state=[States.selected_user_teacher, States.selected_teacher])
 async def get_reviews(message: types.Message, state: FSMContext):
     async with state.proxy() as data:
         teacher_name = data["selected_teacher"]
