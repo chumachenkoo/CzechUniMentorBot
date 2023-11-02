@@ -103,7 +103,7 @@ async def get_all_teachers():
     try:
         teachers = session.query(Teacher).all()
         for teacher in teachers:
-            all_teachers.append((teacher.name, teacher.id, teacher.telegram_id, teacher.subject_id))
+            all_teachers.append((teacher.name, teacher.id, teacher.telegram_username, teacher.subject_id))
         return all_teachers
     finally:
         await connection.close()
