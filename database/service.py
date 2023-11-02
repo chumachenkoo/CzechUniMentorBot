@@ -252,7 +252,7 @@ async def get_teacher_by_name(teacher_name):
     try:
         teacher = session.query(Teacher).filter(Teacher.name == teacher_name).first()
         if teacher is not None:
-            return teacher.telegram_username
+            return teacher.telegram_username, teacher.id
         else:
             raise ValueError(f"Teacher with ID {teacher_name} not found.")
     except Exception as e:
@@ -297,7 +297,7 @@ async def get_profile_photo(teacher_id):
     connection, session = await get_database_connection()
     try:
         photo = session.query(ProfilePhoto).filter(ProfilePhoto.teacher_id == teacher_id).first()
-        if photo:
+        if photo is not None:
             return photo.image_data
         else:
             return None
@@ -320,7 +320,7 @@ async def delete_profile_photo(teacher_id):
     connection, session = await get_database_connection()
     try:
         photo = session.query(ProfilePhoto).filter(ProfilePhoto.teacher_id == teacher_id).first()
-        if photo:
+        if photo is not None:
             session.delete(photo)
             session.commit()
             return True

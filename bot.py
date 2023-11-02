@@ -6,6 +6,7 @@ import database.service as db
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters.state import State, StatesGroup
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
+import io
 
 bot = Bot(token=config.BOT_TOKEN)
 storage = MemoryStorage()
@@ -31,6 +32,8 @@ class States(StatesGroup):
     add_subject_to_university = State()
     delete_subject_from_university = State()
     add_teacher_to_subject = State()
+    add_profile_photo = State()
+    add_review_photo = State()
 
     user_universities = State()
     selected_user_university = State()
@@ -224,8 +227,25 @@ async def add_teacher(message: types.Message, state: FSMContext):
         await message.answer("Вы не являетесь администратором.")
         await on_start(message)
 
+
 #Добавить функционал добавления фото профиля
+@dp.message_handler(lambda message: message.text == "Добавить фото профиля", state=States.selected_teacher)
+async def add_profile_photo(message: types.Message, state: FSMContext):
+    async with state.proxy() as data:
+        data["previous_state"] = States.universities.state
+    await States.add_profile_photo.set()
+    await message.answer("Пожалуйста, загрузите фото профиля.")
+
+
+
 #Добавить функционал добавления фото отзывов
+@dp.message_handler(lambda message: message.text == "Добавить фото отзывы", state=States.selected_teacher)
+async def add_review_photo(message: types.Message, state: FSMContext):
+    async with state.proxy() as data:
+        data["previous_state"] = States.universities.state
+    await States.add_review_photo.set()
+    await message.answer("Пожалуйста, загрузите фото отзыв.")
+
 
 # ______________________________________________________________________________________________________________________
 # Кнопки удаления
@@ -234,6 +254,7 @@ async def delete_university(message: types.Message, state: FSMContext):
     if message.from_user.id in config.ADMINS:
         async with state.proxy() as data:
             selected_university = data.get("university_selected")
+            data["previous_state"] = States.universities.state
 
         university_id = await db.get_university_by_name(selected_university)
         delete_status = await db.delete_university_by_id(university_id)
@@ -243,7 +264,7 @@ async def delete_university(message: types.Message, state: FSMContext):
         else:
             await message.answer(f"Произошла ошибка при удалении университета {selected_university}.")
 
-        await get_universities(message, state=state)
+        await get_back(message, state=state)
     else:
         await message.answer("Вы не являетесь администратором.")
         await on_start(message)
@@ -254,16 +275,17 @@ async def delete_subject(message: types.Message, state: FSMContext):
     if message.from_user.id in config.ADMINS:
         async with state.proxy() as data:
             selected_subject = data.get("subject_selected")
+            selected_subject_id = data.get("selected_subject_id")
+            data["previous_state"] = States.universities.state
 
-        subject_id = await db.get_subject_by_name(selected_subject)
-        delete_status = await db.delete_subject_by_id(subject_id)
+        delete_status = await db.delete_subject_by_id(selected_subject_id)
 
         if delete_status:
             await message.answer(f"Предмет {selected_subject} успешно удален.")
         else:
             await message.answer(f"Произошла ошибка при удалении предмета {selected_subject}.")
 
-        await get_universities(message, state=state)
+        await get_back(message, state=state)
     else:
         await message.answer("Вы не являетесь администратором.")
         await on_start(message)
@@ -274,16 +296,18 @@ async def delete_teacher(message: types.Message, state: FSMContext):
     if message.from_user.id in config.ADMINS:
         async with state.proxy() as data:
             selected_teacher = data.get("selected_teacher")
+            data["previous_state"] = States.universities.state
 
-        teacher_id = await db.get_teacher_by_name(selected_teacher)
-        delete_status = await db.delete_teacher_by_id(teacher_id)
+        teacher_data = await db.get_teacher_by_name(selected_teacher)
+        delete_status = await db.delete_teacher_by_id(teacher_data[1])
 
         if delete_status:
             await message.answer(f"Учитель {selected_teacher} успешно удален.")
         else:
             await message.answer(f"Произошла ошибка при удалении учителя {selected_teacher}.")
 
-        await get_universities(message, state=state)
+        await get_back(message, state=state)
+
     else:
         await message.answer("Вы не являетесь администратором.")
         await on_start(message)
@@ -307,7 +331,8 @@ async def save_university(message: types.Message, state: FSMContext):
         else:
             await db.add_university(university_name)
             await message.answer(f"Университет {university_name} был успешно добавлен!")
-            await on_start(message, state=state)
+
+        await get_back(message, state=state)
 
     else:
         await message.answer("Вы не являетесь администратором.")
@@ -330,25 +355,71 @@ async def save_subject(message: types.Message, state: FSMContext):
         else:
             await message.answer(f"Произошла ошибка при добавлении предмета {subject_name}.")
 
+    await get_back(message, state=state)
+
 
 @dp.message_handler(state=States.add_teacher_to_subject)
 async def save_teacher(message: types.Message, state: FSMContext):
     teacher_name, teacher_telegram_username, teacher_telegram_id = message.text.split(", ")
 
     async with state.proxy() as data:
-        selected_subject = data.get("selected_subject")
+        selected_subject_id = data.get("selected_subject_id")
         data["previous_state"] = States.universities.state
 
-    subject_id = await db.get_subject_by_name(selected_subject)
-    print(teacher_name, teacher_telegram_username, subject_id)
-
     if message.from_user.id in config.ADMINS:
-        add_status = await db.add_teacher(teacher_name, teacher_telegram_username, teacher_telegram_id, subject_id)
+        add_status = await db.add_teacher(teacher_name, teacher_telegram_username, teacher_telegram_id, selected_subject_id)
         if add_status:
             await message.answer(f"Учитель {teacher_name} успешно добавлен.")
         else:
             await message.answer(f"Произошла ошибка при добавлении учителя {teacher_name}.")
-        return await get_back(message, state=state)
+
+    await get_back(message, state=state)
+
+
+@dp.message_handler(content_types=['photo'], state=States.add_profile_photo)
+async def upload_profile_photo(message: types.Message, state: FSMContext):
+    photo = message.photo[-1]
+    file = await bot.get_file(photo.file_id)
+
+    file_path = file.file_path
+    byte_stream = await bot.download_file(file_path)
+
+    image_data = byte_stream.getvalue()
+
+    async with state.proxy() as data:
+        teacher_id = data['selected_teacher_id']
+
+    success = await db.add_profile_photo(teacher_id, image_data)
+
+    if success:
+        await message.answer("Фото профиля учителя успешно загружено и сохранено.")
+    else:
+        await message.answer("Ошибка при сохранении фото профиля учителя.")
+
+    await States.selected_teacher.set()
+
+
+@dp.message_handler(content_types=['photo'], state=States.add_review_photo)
+async def upload_review_photo(message: types.Message, state: FSMContext):
+    photo = message.photo[-1]
+    file = await bot.get_file(photo.file_id)
+
+    file_path = file.file_path
+    byte_stream = await bot.download_file(file_path)
+
+    image_data = byte_stream.getvalue()
+
+    async with state.proxy() as data:
+        teacher_id = data['selected_teacher_id']
+
+    success = await db.add_review_photo(teacher_id, image_data)
+
+    if success:
+        await message.answer("Фото отзыва успешно загружено и сохранено.")
+    else:
+        await message.answer("Ошибка при сохранении фото отзыва.")
+
+    await States.selected_teacher.set()
 
 
 # ______________________________________________________________________________________________________________________
@@ -390,6 +461,7 @@ async def selected_subject(message: types.Message, state: FSMContext):
     if subject_id:
         async with state.proxy() as data:
             data["selected_subject"] = subject_name
+            data["selected_subject_id"] = subject_id
             data["previous_state"] = States.universities.state
         await States.selected_subject.set()
 
@@ -405,7 +477,6 @@ async def selected_subject(message: types.Message, state: FSMContext):
             keyboard.add(types.KeyboardButton(teacher[0]))
 
         await message.answer(teacher_text, reply_markup=keyboard)
-        await States.selected_subject.set()
     else:
         await message.answer("Выберите учителя из списка.")
 
@@ -413,21 +484,32 @@ async def selected_subject(message: types.Message, state: FSMContext):
 @dp.message_handler(state=States.selected_subject)
 async def selected_teacher(message: types.Message, state: FSMContext):
     teacher_name = message.text
-    teacher_id = await db.get_teacher_by_name(teacher_name)
+    teacher_data = await db.get_teacher_by_name(teacher_name)
 
-    if teacher_id:
+    if teacher_data:
         async with state.proxy() as data:
             data["selected_teacher"] = teacher_name
+            data["selected_teacher_id"] = teacher_data[1]
             data["previous_state"] = States.universities.state
         await States.selected_teacher.set()
 
         teacher_text = "Вы выбрали учителя {}.\n".format(teacher_name)
         keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
         button1 = types.KeyboardButton("Удалить учителя")
-        button2 = types.KeyboardButton("Назад")
-        keyboard.add(button1, button2)
+        button2 = types.KeyboardButton("Добавить фото профиля")
+        button3 = types.KeyboardButton("Добавить фото отзывы")
+        button4 = types.KeyboardButton("Назад")
+        keyboard.add(button1, button2, button3, button4)
 
         await message.answer(teacher_text, reply_markup=keyboard)
+
+        photo_data = await db.get_profile_photo(teacher_data[1])
+        if photo_data:
+            with io.BytesIO(photo_data) as photo_file:
+                await message.answer_photo(photo_file)
+        else:
+            await message.answer("Фотография профиля учителя отсутствует.")
+
     else:
         await message.answer("Ошибка, такого учителя не существует.")
 
@@ -488,6 +570,7 @@ async def selected_user_subject(message: types.Message, state: FSMContext):
     if subject_id:
         async with state.proxy() as data:
             data["selected_subject"] = subject_name
+            data["selected_subject_id"] = subject_id
             data["previous_state"] = States.user_universities.state
         await States.selected_user_subject.set()
 
@@ -505,29 +588,30 @@ async def selected_user_subject(message: types.Message, state: FSMContext):
         await message.answer("Выберите учителя из списка.")
 
 
-# Добавить кнопки Отзывы, Добавить фото из БД
+# Добавить вывод фото профиля
 @dp.message_handler(state=States.selected_user_subject)
 async def selected_user_teacher(message: types.Message, state: FSMContext):
     teacher_name = message.text
-    teacher_username = await db.get_teacher_by_name(teacher_name)
+    teacher_data = await db.get_teacher_by_name(teacher_name)
 
-    if teacher_username:
+    if teacher_data:
         async with state.proxy() as data:
-            data["selected_teacher"] = teacher_name
-            data["selected_teacher_username"] = teacher_username
+            data["selected_teacher"] = teacher_name[0]
+            data["selected_teacher_username"] = teacher_data[0]
             data["previous_state"] = States.user_universities.state
         await States.selected_user_teacher.set()
 
-        teacher_text = "Вы выбрали учителя {}.\n".format(teacher_name)
-        url = f"https://t.me/{teacher_username}"
+        teacher_text = "Вы выбрали учителя {}.\n".format(teacher_name[0])
+        url = f"https://t.me/{teacher_data[0]}"
 
         keyboard1 = types.InlineKeyboardMarkup(resize_keyboard=True)
         button1 = types.InlineKeyboardButton("Написать учителю", url=url)
-        keyboard1.add(button1)
+        button2 = types.InlineKeyboardButton("Отзывы")
+        keyboard1.add(button1, button2)
 
         keyboard2 = types.ReplyKeyboardMarkup(resize_keyboard=True)
-        button2 = types.KeyboardButton("Назад")
-        keyboard2.add(button2)
+        button3 = types.KeyboardButton("Назад")
+        keyboard2.add(button3)
 
         await message.answer(teacher_text, reply_markup=keyboard1)
         await message.answer(reply_markup=keyboard2)
@@ -535,7 +619,7 @@ async def selected_user_teacher(message: types.Message, state: FSMContext):
         await message.answer("Ошибка, такого учителя не существует.")
 
 
-#Добавить кнопку Отзывы
+#Добавить кнопку Отзывы и вывод фото отзывов
 
 if __name__ == '__main__':
     executor.start_polling(dp, skip_updates=False)
