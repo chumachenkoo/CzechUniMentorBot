@@ -15,23 +15,19 @@ dp.middleware.setup(LoggingMiddleware())
 
 
 class States(StatesGroup):
-    uni_name = State()
     main_menu = State()
     universities = State()
-    teachers = State()
     subjects = State()
+    teachers = State()
+
     add_university = State()
-    add_teacher = State()
-    delete_university = State()
-    delete_teacher = State()
-    delete_subject = State()
+    add_subject_to_university = State()
+    add_teacher_to_subject = State()
+
     selected_university = State()
     selected_teacher = State()
     selected_subject = State()
-    change_university_name = State()
-    add_subject_to_university = State()
-    delete_subject_from_university = State()
-    add_teacher_to_subject = State()
+
     add_profile_photo = State()
     add_review_photo = State()
 
@@ -378,7 +374,6 @@ async def save_university(message: types.Message, state: FSMContext):
     if message.from_user.id in config.ADMINS:
         if await db.get_university_by_name(university_name):
             await message.answer("Такой университет уже существует!")
-            await add_university(message, state=state)
         else:
             await db.add_university(university_name)
             await message.answer(f"Университет {university_name} был успешно добавлен!")
