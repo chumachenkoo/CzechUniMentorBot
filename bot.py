@@ -598,7 +598,7 @@ async def selected_user_university(message: types.Message, state: FSMContext):
         async with state.proxy() as data:
             data["selected_university"] = university_name
             data["selected_university_id"] = university_id
-            data["previous_state"] = States.user_universities.state
+            data["previous_state"] = States.main_menu.state
         await States.selected_user_university.set()
 
         keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
@@ -624,7 +624,7 @@ async def selected_user_subject(message: types.Message, state: FSMContext):
         async with state.proxy() as data:
             data["selected_subject"] = subject_name
             data["selected_subject_id"] = subject_id
-            data["previous_state"] = States.user_universities.state
+            data["previous_state"] = States.main_menu.state
         await States.selected_user_subject.set()
 
         keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
@@ -650,7 +650,7 @@ async def selected_user_teacher(message: types.Message, state: FSMContext):
         async with state.proxy() as data:
             data["selected_teacher"] = teacher_name
             data["selected_teacher_id"] = teacher_data[1]
-            data["previous_state"] = States.user_universities.state
+            data["previous_state"] = States.main_menu.state
         await States.selected_user_teacher.set()
 
         keyboard2 = types.ReplyKeyboardMarkup(resize_keyboard=True)
