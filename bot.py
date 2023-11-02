@@ -175,6 +175,29 @@ async def get_subjects(message: types.Message, state: FSMContext):
         await on_start(message)
 
 
+@dp.message_handler(lambda message: message.text == "Отзывы", state=[States.selected_user_teacher, States.selected_teacher])
+async def get_reviews(message: types.Message, state: FSMContext):
+    async with state.proxy() as data:
+        teacher_name = data["selected_teacher"]
+        selected_teacher_id = data["selected_teacher_id"]
+        data["previous_state"] = States.user_universities.state
+
+    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    button = types.KeyboardButton("Назад")
+    keyboard.add(button)
+
+    teacher_text = f'Отзывы учителя {teacher_name}\n'
+    await message.answer(teacher_text, reply_markup=keyboard)
+
+    review_photos = await db.get_review_photos(selected_teacher_id)
+    if review_photos:
+        for photo_data in review_photos:
+            with io.BytesIO(photo_data) as photo_file:
+                await message.answer_photo(photo_file)
+    else:
+        await message.answer("Отзывы отсутствуют.")
+
+
 # ______________________________________________________________________________________________________________________
 # Кнопки добавления
 @dp.message_handler(lambda message: message.text == "Добавить университет", state="*")
@@ -495,8 +518,9 @@ async def selected_teacher(message: types.Message, state: FSMContext):
         button1 = types.KeyboardButton("Удалить учителя")
         button2 = types.KeyboardButton("Добавить фото профиля")
         button3 = types.KeyboardButton("Добавить отзывы")
-        button4 = types.KeyboardButton("Назад")
-        keyboard.add(button1, button2, button3, button4)
+        button4 = types.KeyboardButton("Отзывы")
+        button5 = types.KeyboardButton("Назад")
+        keyboard.add(button1, button2, button3, button4, button5)
 
         await message.answer(teacher_text, reply_markup=keyboard)
 
@@ -585,7 +609,6 @@ async def selected_user_subject(message: types.Message, state: FSMContext):
         await message.answer("Выберите учителя из списка.")
 
 
-# Добавить вывод фото профиля
 @dp.message_handler(state=States.selected_user_subject)
 async def selected_user_teacher(message: types.Message, state: FSMContext):
     teacher_name = message.text
@@ -594,10 +617,9 @@ async def selected_user_teacher(message: types.Message, state: FSMContext):
     if teacher_data:
         async with state.proxy() as data:
             data["selected_teacher"] = teacher_name
-            data["selected_teacher_username"] = teacher_data[0]
+            data["selected_teacher_id"] = teacher_data[1]
             data["previous_state"] = States.user_universities.state
         await States.selected_user_teacher.set()
-
 
         keyboard2 = types.ReplyKeyboardMarkup(resize_keyboard=True)
         button2 = types.KeyboardButton("Назад")
@@ -622,9 +644,6 @@ async def selected_user_teacher(message: types.Message, state: FSMContext):
     else:
         await message.answer("Ошибка, такого учителя не существует.")
 
-
-
-#Добавить кнопку Отзывы и вывод фото отзывов
 
 if __name__ == '__main__':
     executor.start_polling(dp, skip_updates=False)
