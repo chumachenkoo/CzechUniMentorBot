@@ -231,13 +231,14 @@ async def add_teacher(message: types.Message, state: FSMContext):
         button1 = types.KeyboardButton("Назад")
         keyboard.add(button1)
 
-        await message.answer("Введите имя учителя, его Username и ID в Telegram: (Имя, Username, ID)", reply_markup=keyboard)
+        await message.answer("Введите имя учителя, его Username и ID в Telegram: (Имя, Username, ID)",
+                             reply_markup=keyboard)
     else:
         await message.answer("Вы не являетесь администратором.")
         await on_start(message)
 
 
-@dp.message_handler(lambda message: message.text == "Добавить фото профиля", state=States.selected_teacher)
+@dp.message_handler(lambda message: message.text == "Добавить фото", state=States.selected_teacher)
 async def add_profile_photo(message: types.Message, state: FSMContext):
     async with state.proxy() as data:
         data["previous_state"] = States.main_menu.state
@@ -259,7 +260,7 @@ async def add_review_photo(message: types.Message, state: FSMContext):
 async def delete_university(message: types.Message, state: FSMContext):
     if message.from_user.id in config.ADMINS:
         async with state.proxy() as data:
-            selected_university = data["university_selected"]
+            selected_university = data["selected_university"]
             selected_university_id = data["selected_university_id"]
             data["previous_state"] = States.main_menu.state
 
@@ -280,7 +281,7 @@ async def delete_university(message: types.Message, state: FSMContext):
 async def delete_subject(message: types.Message, state: FSMContext):
     if message.from_user.id in config.ADMINS:
         async with state.proxy() as data:
-            selected_subject = data["subject_selected"]
+            selected_subject = data["selected_subject"]
             selected_subject_id = data["selected_subject_id"]
             data["previous_state"] = States.main_menu.state
 
@@ -319,7 +320,7 @@ async def delete_teacher(message: types.Message, state: FSMContext):
         await on_start(message)
 
 
-@dp.message_handler(lambda message: message.text == "Удалить фото профиля", state=States.selected_teacher)
+@dp.message_handler(lambda message: message.text == "Удалить фото", state=States.selected_teacher)
 async def delete_profile_photo(message: types.Message, state: FSMContext):
     if message.from_user.id in config.ADMINS:
         async with state.proxy() as data:
@@ -412,7 +413,7 @@ async def save_teacher(message: types.Message, state: FSMContext):
         data["previous_state"] = States.main_menu.state
 
     if message.from_user.id in config.ADMINS:
-        add_status = await db.add_teacher(teacher_name, teacher_telegram_username, teacher_telegram_id, selected_subject_id)
+        add_status = await db.add_teacher(teacher_name, teacher_telegram_username, selected_subject_id)
         if add_status:
             await message.answer(f"Учитель {teacher_name} успешно добавлен.")
         else:
@@ -442,6 +443,7 @@ async def upload_profile_photo(message: types.Message, state: FSMContext):
         await message.answer("Ошибка при сохранении фото профиля учителя.")
 
     await States.selected_teacher.set()
+    await get_back(message, state=state)
 
 
 @dp.message_handler(content_types=['photo'], state=States.add_review_photo)
@@ -541,8 +543,8 @@ async def selected_teacher(message: types.Message, state: FSMContext):
         teacher_text = "Вы выбрали учителя {}.\n".format(teacher_name)
         keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
         button1 = types.KeyboardButton("Удалить учителя")
-        button2 = types.KeyboardButton("Добавить фото профиля")
-        button3 = types.KeyboardButton("Удалить фото профиля")
+        button2 = types.KeyboardButton("Добавить фото")
+        button3 = types.KeyboardButton("Удалить фото")
         button4 = types.KeyboardButton("Добавить отзывы")
         button5 = types.KeyboardButton("Удалить отзывы")
         button6 = types.KeyboardButton("Отзывы")
@@ -551,10 +553,15 @@ async def selected_teacher(message: types.Message, state: FSMContext):
 
         await message.answer(teacher_text, reply_markup=keyboard)
 
+        url = f"https://t.me/{teacher_data[0]}"
+        keyboard1 = types.InlineKeyboardMarkup(resize_keyboard=True)
+        button8 = types.InlineKeyboardButton("Написать учителю", url=url)
+        keyboard1.add(button8)
+
         photo_data = await db.get_profile_photo(teacher_data[1])
         if photo_data:
             with io.BytesIO(photo_data) as photo_file:
-                await message.answer_photo(photo_file)
+                await message.answer_photo(photo_file, reply_markup=keyboard1)
         else:
             await message.answer("Фотография профиля учителя отсутствует.")
 
