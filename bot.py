@@ -8,6 +8,7 @@ import config
 import database.service as db
 import io
 import logging
+import asyncio
 
 
 bot = Bot(token=config.BOT_TOKEN)
@@ -15,6 +16,7 @@ storage = MemoryStorage()
 dp = Dispatcher(bot, storage=storage)
 logging.basicConfig(level=logging.DEBUG)
 dp.middleware.setup(LoggingMiddleware(logger=logging.getLogger()))
+
 
 
 class States(StatesGroup):
@@ -684,6 +686,9 @@ async def selected_user_teacher(message: types.Message, state: FSMContext):
 
 
 if __name__ == '__main__':
-    executor.start_polling(dp, skip_updates=False)
+    # executor.start_polling(dp, skip_updates=False)
+    asyncio.run(bot.delete_webhook())
+    asyncio.run(bot.set_webhook(config.APP_URL))
+
 
 
