@@ -7,11 +7,14 @@ from aiogram.contrib.fsm_storage.memory import MemoryStorage
 import config
 import database.service as db
 import io
+import logging
+
 
 bot = Bot(token=config.BOT_TOKEN)
 storage = MemoryStorage()
 dp = Dispatcher(bot, storage=storage)
-dp.middleware.setup(LoggingMiddleware())
+logging.basicConfig(level=logging.DEBUG)
+dp.middleware.setup(LoggingMiddleware(logger=logging.getLogger()))
 
 
 class States(StatesGroup):
