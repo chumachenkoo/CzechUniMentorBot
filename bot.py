@@ -8,7 +8,7 @@ import config
 import database.service as db
 import io
 import logging
-import asyncio
+import os
 
 
 bot = Bot(token=config.BOT_TOKEN)
@@ -685,10 +685,21 @@ async def selected_user_teacher(message: types.Message, state: FSMContext):
         await message.answer("Ошибка, такого учителя не существует.")
 
 
+async def on_startup(dp):
+    await bot.send_message(chat_id=993868802, text='Bot has been started')
+    await bot.set_webhook(url=config.APP_URL)
+
+
+async def on_shutdown(dp):
+    await bot.send_message(chat_id=993868802, text='Bot has been stopped')
+    await bot.delete_webhook()
+
+
 if __name__ == '__main__':
+    executor.start_webhook(dispatcher=dp, webhook_path='/'+config.BOT_TOKEN,
+                           on_startup=on_startup, on_shutdown=on_shutdown,
+                           skip_updates=True, host='0.0.0.0', port=int(os.environ.get('PORT', 5435)))
+
+
+# if __name__ == '__main__':
     # executor.start_polling(dp, skip_updates=False)
-    asyncio.run(bot.delete_webhook())
-    asyncio.run(bot.set_webhook(config.APP_URL))
-
-
-
