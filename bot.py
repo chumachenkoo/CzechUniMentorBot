@@ -54,7 +54,7 @@ async def on_start(message: types.Message, state: FSMContext):
         if message.text == "/start":
             text = f"Привет, администратор {message.from_user.first_name}! Я бот MentorBot :)"
         else:
-            text = "Вы вернулись назад :)"
+            text = "Вы вернулись на главную :)"
         keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
         button1 = types.KeyboardButton("Университеты")
         button2 = types.KeyboardButton("Учителя")
@@ -63,29 +63,40 @@ async def on_start(message: types.Message, state: FSMContext):
         await message.answer(text, reply_markup=keyboard)
     else:
         if message.text == "/start":
-            text = (f"Привет, {message.from_user.first_name}! Я бот MentorBot :)\n"
-                    f"Я помогу тебе найти учителя по предмету, который ты изучаешь в университете.\n"
-                    f"Нажми на 'Выбрать университет', чтобы начать.")
+
+            await bot.send_sticker(message.chat.id, sticker='CAACAgIAAxkBAAEndoBlShLhn64M4xKw04pOWX8J'
+                                                            '_y0lQgAC2D0AAmuFUUr68n7w3UVk9zME')
+
+            text1 = (f"Привет, {message.from_user.first_name}! Я помощник MentorBot :)")
+            text2 = ("Помогу найти учителя для подготовки\n"
+                     "Нажми 'Выбрать университет', чтобы начать")
+
+            await message.answer(text1)
+
             user = await db.get_user_by_username(message.from_user.username)
             if user is None:
                 await db.create_user(message.from_user.username)
 
         else:
-            text = "Хочешь еще поискать учителя? Нажимай 'Выбрать университет' :)"
+            await bot.send_sticker(message.chat.id, sticker='CAACAgIAAxkBAAEndpJlShRqFZtNOtVBTSlmOyw'
+                                                            'FzKGVpgAChDwAAsLTSUqTxPG-Gw892jME')
+            text2 = ("Хочешь еще поискать учителя?\n"
+                     "Нажимай 'Выбрать университет' :)")
 
         keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
         button1 = types.KeyboardButton("Выбрать университет")
         keyboard.add(button1)
-        await message.answer(text, reply_markup=keyboard)
+        await message.answer(text2, reply_markup=keyboard)
 
 
-@dp.message_handler(lambda message: message.text == "Назад", state="*")
+@dp.message_handler(lambda message: message.text == "Главная", state="*")
 async def get_back(message: types.Message, state: FSMContext):
     async with state.proxy() as data:
         previous_state = data.get("previous_state")
 
         if previous_state == States.main_menu.state or previous_state is None:
             await on_start(message, state=state)
+
 
 
 @dp.message_handler(lambda message: message.text == "Университеты", state="*")
@@ -97,7 +108,7 @@ async def get_universities(message: types.Message, state: FSMContext):
 
         keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
         button1 = types.KeyboardButton("Добавить университет")
-        button2 = types.KeyboardButton("Назад")
+        button2 = types.KeyboardButton("Главная")
         keyboard.add(button1, button2)
 
         universities = await db.get_all_universities()
@@ -121,7 +132,7 @@ async def get_teachers(message: types.Message, state: FSMContext):
         await States.teachers.set()
 
         keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-        button1 = types.KeyboardButton("Назад")
+        button1 = types.KeyboardButton("Главная")
         keyboard.add(button1)
 
         teachers = await db.get_all_teachers()
@@ -146,7 +157,7 @@ async def get_subjects(message: types.Message, state: FSMContext):
         await States.subjects.set()
 
         keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-        button1 = types.KeyboardButton("Назад")
+        button1 = types.KeyboardButton("Главная")
         keyboard.add(button1)
 
         subjects = await db.get_all_subjects()
@@ -175,7 +186,7 @@ async def get_reviews(message: types.Message, state: FSMContext):
         data["previous_state"] = States.main_menu.state
 
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-    button = types.KeyboardButton("Назад")
+    button = types.KeyboardButton("Главная")
     keyboard.add(button)
 
     teacher_text = f'Отзывы учителя {teacher_name}\n'
@@ -200,7 +211,7 @@ async def add_university(message: types.Message, state: FSMContext):
         await States.add_university.set()
 
         keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-        button1 = types.KeyboardButton("Назад")
+        button1 = types.KeyboardButton("Главная")
         keyboard.add(button1)
 
         await message.answer("Введите название университета:", reply_markup=keyboard)
@@ -217,7 +228,7 @@ async def add_subject(message: types.Message, state: FSMContext):
         await States.add_subject_to_university.set()
 
         keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-        button1 = types.KeyboardButton("Назад")
+        button1 = types.KeyboardButton("Главная")
         keyboard.add(button1)
 
         await message.answer("Введите имя предмета:", reply_markup=keyboard)
@@ -234,7 +245,7 @@ async def add_teacher(message: types.Message, state: FSMContext):
         await States.add_teacher_to_subject.set()
 
         keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-        button1 = types.KeyboardButton("Назад")
+        button1 = types.KeyboardButton("Главная")
         keyboard.add(button1)
 
         await message.answer("Введите имя учителя, его Username и ID в Telegram: (Имя, Username, ID)",
@@ -492,7 +503,7 @@ async def selected_university(message: types.Message, state: FSMContext):
         keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
         button1 = types.KeyboardButton("Добавить предмет")
         button2 = types.KeyboardButton("Удалить университет")
-        button4 = types.KeyboardButton("Назад")
+        button4 = types.KeyboardButton("Главная")
         keyboard.add(button1, button2, button4)
 
         subjects = await db.get_subjects_by_university(university_id)
@@ -521,7 +532,7 @@ async def selected_subject(message: types.Message, state: FSMContext):
         keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
         button1 = types.KeyboardButton("Добавить учителя")
         button2 = types.KeyboardButton("Удалить предмет")
-        button3 = types.KeyboardButton("Назад")
+        button3 = types.KeyboardButton("Главная")
         keyboard.add(button1, button2, button3)
 
         teachers = await db.get_teachers_by_subject(subject_id)
@@ -554,7 +565,7 @@ async def selected_teacher(message: types.Message, state: FSMContext):
         button4 = types.KeyboardButton("Добавить отзывы")
         button5 = types.KeyboardButton("Удалить отзывы")
         button6 = types.KeyboardButton("Отзывы")
-        button7 = types.KeyboardButton("Назад")
+        button7 = types.KeyboardButton("Главная")
         keyboard.add(button1, button2, button3, button4, button5, button6, button7)
 
         await message.answer(teacher_text, reply_markup=keyboard)
@@ -583,8 +594,11 @@ async def user_get_universities(message: types.Message, state: FSMContext):
         data["previous_state"] = States.main_menu.state
     await States.user_universities.set()
 
+    await bot.send_sticker(message.chat.id, sticker='CAACAgIAAxkBAAEndoZlShOjKxDYdqtZhGez'
+                                                    'TRvj8-fBMgAC7zgAAjjxSEqnyxY5fkQ_GzME')
+
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-    button1 = types.KeyboardButton("Назад")
+    button1 = types.KeyboardButton("Главная")
     keyboard.add(button1)
 
     universities = await db.get_all_universities()
@@ -610,9 +624,11 @@ async def selected_user_university(message: types.Message, state: FSMContext):
         await States.selected_user_university.set()
 
         keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-        button1 = types.KeyboardButton("Назад")
+        button1 = types.KeyboardButton("Главная")
         keyboard.add(button1)
 
+        await bot.send_sticker(message.chat.id, sticker='CAACAgIAAxkBAAEndoplShPdmu--NnatYWMU-G'
+                                                        'W7QqZ2BAACLjkAArqPSEocMYnXoyI0oDME')
         subjects = await db.get_subjects_by_university(university_id)
         subjects_text = "Выбери предмет своего университета {}:\n".format(university_name)
         for subject in subjects:
@@ -636,9 +652,11 @@ async def selected_user_subject(message: types.Message, state: FSMContext):
         await States.selected_user_subject.set()
 
         keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-        button1 = types.KeyboardButton("Назад")
+        button1 = types.KeyboardButton("Главная")
         keyboard.add(button1)
 
+        await bot.send_sticker(message.chat.id, sticker='CAACAgIAAxkBAAEndpBlShP03ffFgUGlMjxD0B89U4'
+                                                        't7HwACNTsAAo3OSEpmolLyPGCE2TME')
         teachers = await db.get_teachers_by_subject(subject_id)
         teacher_text = "Выбери подходящего учителя {}:\n".format(subject_name)
         for teacher in teachers:
@@ -662,28 +680,36 @@ async def selected_user_teacher(message: types.Message, state: FSMContext):
         await States.selected_user_teacher.set()
 
         keyboard2 = types.ReplyKeyboardMarkup(resize_keyboard=True)
-        button2 = types.KeyboardButton("Назад")
+        button2 = types.KeyboardButton("Главная")
         button3 = types.KeyboardButton("Отзывы")
         keyboard2.add(button2, button3)
 
         teacher_text = f'Вы выбрали учителя {teacher_name}\n'
         await message.answer(teacher_text, reply_markup=keyboard2)
 
-        photo_data = await db.get_profile_photo(teacher_data[1])
         url = f"https://t.me/{teacher_data[0]}"
         keyboard1 = types.InlineKeyboardMarkup(resize_keyboard=True)
         button1 = types.InlineKeyboardButton("Написать учителю", url=url)
         keyboard1.add(button1)
 
+        photo_data = await db.get_profile_photo(teacher_data[1])
         if photo_data:
             with io.BytesIO(photo_data) as photo_file:
                 await message.answer_photo(photo_file, reply_markup=keyboard1)
         else:
             await message.answer("Фотография профиля учителя отсутствует.", reply_markup=keyboard1)
 
+        sale_text = ('С промокодом "CzechMentorBot" ты получишь 10% скидку на первое занятие')
+        text = ('Не забудь написать об этом учителю :)')
+
+        await message.answer(sale_text)
+        await message.answer(text)
+
     else:
         await message.answer("Ошибка, такого учителя не существует.")
 
+
+#_______________________________________________________________________________________________________________________
 
 async def on_startup(dp):
     await bot.send_message(chat_id=993868802, text='Bot has been started')
@@ -702,4 +728,4 @@ if __name__ == '__main__':
 
 
 # if __name__ == '__main__':
-    # executor.start_polling(dp, skip_updates=False)
+#     executor.start_polling(dp, skip_updates=False)
