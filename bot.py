@@ -712,12 +712,12 @@ async def selected_user_teacher(message: types.Message, state: FSMContext):
 #_______________________________________________________________________________________________________________________
 
 async def on_startup(dp):
-    await bot.send_message(chat_id=993868802, text='Bot has been started')
+    await bot.send_message(chat_id=config.ADMINS[0], text='Bot has been started')
     await bot.set_webhook(url=config.APP_URL)
 
 
 async def on_shutdown(dp):
-    await bot.send_message(chat_id=993868802, text='Bot has been stopped')
+    await bot.send_message(chat_id=config.ADMINS[0], text='Bot has been stopped')
     await bot.delete_webhook()
 
 
