@@ -684,7 +684,7 @@ async def selected_user_teacher(message: types.Message, state: FSMContext):
         button3 = types.KeyboardButton("Отзывы")
         keyboard2.add(button2, button3)
 
-        teacher_text = f'Вы выбрали учителя {teacher_name}\n'
+        teacher_text = f'Ты выбрал(-а) учителя {teacher_name}\n'
         await message.answer(teacher_text, reply_markup=keyboard2)
 
         url = f"https://t.me/{teacher_data[0]}"
